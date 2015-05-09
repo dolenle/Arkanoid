@@ -5,6 +5,8 @@ var time, prevTime, controls;
 var block, paddle, ball, hitbox;
 var balls = [];
 
+var ballGlow;
+
 var gameLength = 400;
 var gameWidth = 200;
 var gameHeight = 100;
@@ -18,7 +20,7 @@ var layerSpacing = 3;
 var maxCols = Math.floor(gameWidth/(blockWidth+colSpacing));
 var maxLayers = Math.floor(gameHeight/(blockHeight+rowSpacing));
 
-var ballRadius = 5;
+var ballRadius = 10;
 
 var raycaster = new THREE.Raycaster();
 
@@ -56,7 +58,7 @@ function init() {
 	
 	//Set up block
 	block = new THREE.Mesh(new THREE.BoxGeometry(blockWidth,blockHeight,blockLength), new THREE.MeshPhongMaterial());
-	addBlocks(19); //create wall
+	blockWall(19); //create wall
 	
 	//Set up paddle
 	var paddleGeom = new THREE.BoxGeometry(40, gameHeight, 10 );
@@ -68,6 +70,21 @@ function init() {
 	//scene.add(paddle);
 	
 	//Set up ball
+	//Test shader
+	ballGlow = new THREE.ShaderMaterial({
+	    uniforms: 
+		{ 
+			"c":   { type: "f", value: 1.0 },
+			"p":   { type: "f", value: 0.3 },
+			glowColor: { type: "c", value: new THREE.Color(0x0022FF) },
+			viewVector: { type: "v3", value: camera.position }
+		},
+		vertexShader: $("#vertexShader").text(),
+		fragmentShader: $("#fragmentShader").text(),
+		side: THREE.FrontSide,
+		blending: THREE.AdditiveBlending,
+		transparent: true
+	});
 	addBall();
 
 	//Initalize WebGL
@@ -113,7 +130,7 @@ function animate() {
 	controls.update();
 	update(time-prevTime);
 	prevTime = time;
-	//paddle.position.x = balls[0].position.x;
+	paddle.position.x = balls[0].position.x;
 }
 
 function update(delta) {
@@ -166,13 +183,13 @@ function update(delta) {
 
 }
 
-function addBlocks(rows) {
+function blockWall(rows) {
 	for(var z = 0; z < rows; z++) {
 		var material = new THREE.MeshPhongMaterial({
 			"color": Math.random() * 0xffffff,
 			"emissive": 0x090909,
 			"specular": 0x0F0F0F,
-			"shininess": 3
+			"shininess": 10
 		});
 		for(var x = 0; x < maxCols; x++) {
 			for(var y = 0; y < maxLayers; y++) {
@@ -185,7 +202,7 @@ function addBlocks(rows) {
 				group.add(copy);
 			}
 		}
-	}
+	} 
 }
 
 function addBall() {
@@ -200,6 +217,11 @@ function addBall() {
 		var hitbox = new THREE.Mesh(new THREE.BoxGeometry(ballRadius*2/1.7,ballRadius*2/1.7,ballRadius*2/1.7));
 		hitbox.visible = false;
 		ball.add(hitbox);
+		
+		var glow = new THREE.Mesh(new THREE.SphereGeometry(ballRadius*1.2, 16), ballGlow);
+		ball.add(glow);
+		
+		ball.add(new THREE.PointLight(0x001188));
 		
 		ball.speed = new THREE.Vector3();
 		ball.direction = new THREE.Vector3();//.set(Math.random()-0.5, 0, -0.5).normalize();
