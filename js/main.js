@@ -89,13 +89,15 @@ function init() {
 	});
 	
 	$("#addBall").click(function () {
-		console.log("adding ball");
 		addBall();
+		$("#addBall").blur();
 	});
 	
 	$(window).keypress(function(event) {
 		if(event.keyCode == 32 && paddle.loadedBall) {
+			event.preventDefault();
 			paddle.loadedBall.direction.set(Math.random()-0.5, 0, -0.5).normalize();
+			balls.push(paddle.loadedBall);
 			paddle.loadedBall = false;
 		}
 	});
@@ -111,7 +113,7 @@ function animate() {
 	controls.update();
 	update(time-prevTime);
 	prevTime = time;
-	paddle.position.x = balls[0].position.x;
+	//paddle.position.x = balls[0].position.x;
 }
 
 function update(delta) {
@@ -187,21 +189,22 @@ function addBlocks(rows) {
 }
 
 function addBall() {
-	var ball = new THREE.Mesh(new THREE.SphereGeometry(ballRadius, 16), new THREE.MeshPhongMaterial());
-	ball.position.y = ballRadius;
-	ball.position.x = paddle.position.x;
-	ball.position.z = paddle.position.z-ballRadius-5;
-	ball.justBounced = false;
-	
-	//x = diameter/sqrt(3) THREE.DodecahedronGeometry(ballRadius));
-	var hitbox = new THREE.Mesh(new THREE.BoxGeometry(ballRadius*2/1.7,ballRadius*2/1.7,ballRadius*2/1.7));
-	hitbox.visible = false;
-	ball.add(hitbox);
-	
-	ball.speed = new THREE.Vector3();
-	ball.direction = new THREE.Vector3();//.set(Math.random()-0.5, 0, -0.5).normalize();
-	
-	paddle.loadedBall = ball;
-	balls.push(ball);
-	group.add(ball);
+	if(!paddle.loadedBall) {
+		var ball = new THREE.Mesh(new THREE.SphereGeometry(ballRadius, 16), new THREE.MeshPhongMaterial());
+		ball.position.y = ballRadius;
+		ball.position.x = paddle.position.x;
+		ball.position.z = paddle.position.z-ballRadius-5;
+		ball.justBounced = false;
+		
+		//x = diameter/sqrt(3) THREE.DodecahedronGeometry(ballRadius));
+		var hitbox = new THREE.Mesh(new THREE.BoxGeometry(ballRadius*2/1.7,ballRadius*2/1.7,ballRadius*2/1.7));
+		hitbox.visible = false;
+		ball.add(hitbox);
+		
+		ball.speed = new THREE.Vector3();
+		ball.direction = new THREE.Vector3();//.set(Math.random()-0.5, 0, -0.5).normalize();
+		
+		paddle.loadedBall = ball;
+		group.add(ball);
+	}
 }
