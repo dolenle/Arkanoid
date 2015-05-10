@@ -4,14 +4,10 @@
 <head>
 	<title>Hello World (Three.js)</title>
 	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<meta name="viewport" content="height=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <script src="js/jquery.js"></script>
 	<script src="js/three.min.js"></script>
 	<script src="js/OrbitControls.js"></script>
-</head>
-
-<body>
-	<button id="addBall">Add Ball</button>
 	<script id="vertexShader" type="x-shader/x-vertex">
 		uniform vec3 viewVector;
 		uniform float c;
@@ -38,6 +34,10 @@
 		}
 	</script>
 	<script src="js/appearance.js"></script>
+</head>
+
+<body>
+	<button id="addBall">Add Ball</button>
 	<script src="js/main.js"></script>
 </body>
 

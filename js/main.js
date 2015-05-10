@@ -5,8 +5,8 @@ var time, prevTime, controls;
 var block, paddle, ball, hitbox;
 var balls = [];
 
-var gameLength = 300;
-var gameWidth = 200;
+var gameLength = 400;
+var gameWidth = 300;
 var gameHeight = 100;
 
 var blockWidth = 25;
@@ -19,6 +19,8 @@ var maxCols = Math.floor(gameWidth/(blockWidth+colSpacing));
 var maxLayers = Math.floor(gameHeight/(blockHeight+layerSpacing));
 
 var ballRadius = 5;
+var paddleWidth = 50;
+var paddleDepth = 5;
 
 var blockGeometry;
 var paddleGeometry;
@@ -40,10 +42,10 @@ animate();
 function init() {
 	//Stuff
 	//paddleGeometry = new THREE.CylinderGeometry(5,20, gameHeight, 10 );
-	paddleGeometry = new THREE.BoxGeometry(40, gameHeight, 10 );	
+	paddleGeometry = new THREE.BoxGeometry(paddleWidth, gameHeight, paddleDepth*2);	
 	
 	scene = new THREE.Scene();
-	renderer = new THREE.WebGLRenderer({antialias: false});
+	renderer = new THREE.WebGLRenderer({antialias: true});
 	renderer.setPixelRatio(window.devicePixelRatio);
 	renderer.setSize(window.innerWidth, window.innerHeight);
 	
@@ -67,7 +69,7 @@ function init() {
 			map: THREE.ImageUtils.loadTexture( urls[i] ),
 			side: THREE.BackSide
 		}));
-	scene.add(new THREE.Mesh(new THREE.CubeGeometry(5000, 5000, 5000), new THREE.MeshFaceMaterial(materialArray)));
+	scene.add(new THREE.Mesh(new THREE.BoxGeometry(8000, 8000, 8000), new THREE.MeshFaceMaterial(materialArray)));
 	
 	//Add floor
 	floor = new THREE.Mesh(new THREE.PlaneGeometry(gameWidth+ballRadius,gameLength+ballRadius), floorMaterial);
@@ -121,7 +123,6 @@ function init() {
 	});
 	
 	$(window).keypress(function(event) {
-		console.log(event.keyCode);
 		if((event.keyCode == 32 || event.keyCode == 0) && paddle.loadedBall) {
 			event.preventDefault();
 			paddle.loadedBall.direction.set(Math.random()-0.5, 0, -0.5).normalize();
@@ -135,14 +136,14 @@ function init() {
 
 function animate() {
 	time = performance.now();
-	requestAnimationFrame(animate);
-
 	renderer.render(scene, camera);
 	controls.update();
 	update(time-prevTime);
 	prevTime = time;
 	//if(!paddle.loadedBall)
 	//	paddle.position.x = balls[0].position.x;
+
+	requestAnimationFrame(animate);
 }
 
 function update(delta) {
@@ -153,9 +154,15 @@ function update(delta) {
 			ball.direction.x = -ball.direction.x;
 			ball.justBounced = false;
 		}
-		if(ball.position.z < -gameLength/2 || ball.position.z > gameLength/2) {
+		if(ball.position.z < -gameLength/2) {
 			ball.direction.z = -ball.direction.z;
 			ball.justBounced = false;
+		}
+		if(ball.position.z > gameLength/2) {
+			balls.splice(b, 1);
+			group.remove(ball);
+			console.log("NO WRONG");
+			continue;
 		}
 		if(ball.position.y < ballRadius || ball.position.y > gameHeight) {
 			ball.direction.y = -ball.direction.y;
@@ -164,7 +171,7 @@ function update(delta) {
 		
 		// Prevent balls from getting stuck on edges
 		ball.position.x = Math.max(-gameWidth/2, Math.min(gameWidth/2, ball.position.x));
-		ball.position.z = Math.max(-200, Math.min(200, ball.position.z));
+		ball.position.z = Math.max(-gameLength/2, Math.min(gameLength/2, ball.position.z));
 		ball.position.y = Math.max(ballRadius, Math.min(gameHeight, ball.position.y));
 		
 		hitbox = ball.children[0];
@@ -181,16 +188,18 @@ function update(delta) {
 					ball.direction.reflect(collisionResults[0].face.normal);
 					ball.justBounced = false;
 					//break;
-				} else if(!ball.justBounced) { //prevent balls from getting stuck inside the paddle
+				} 
+				else if(!ball.justBounced) { //prevent balls from getting stuck inside the paddle
 					//ball.position.add(collisionResults[0].face.normal.clone().multiplyScalar(ball.speed.length()*2));
 					ball.direction.reflect(collisionResults[0].face.normal);
 					ball.justBounced = true;
-					//break;
+					break;
 				}
 				//break;
 			}
 		}
-		ball.position.add(ball.speed.copy(ball.direction).multiplyScalar(delta/3));
+		
+		ball.position.add(ball.speed.copy(ball.direction).multiplyScalar(delta/9));
 	}
 
 }
@@ -237,10 +246,10 @@ function blockAt(x, y, z, blockMaterial) {
 
 function addBall() {
 	if(!paddle.loadedBall) {
-		var ball = new THREE.Mesh(new THREE.SphereGeometry(ballRadius, 16), ballMaterial);
+		var ball = new THREE.Mesh(new THREE.SphereGeometry(ballRadius, 16), ballMaterial.clone());
 		ball.position.y = ballRadius;
 		ball.position.x = paddle.position.x;
-		ball.position.z = paddle.position.z-ballRadius-5;
+		ball.position.z = paddle.position.z-ballRadius-paddleDepth;
 		ball.justBounced = false;
 		
 		//x = diameter/sqrt(3) THREE.DodecahedronGeometry(ballRadius));

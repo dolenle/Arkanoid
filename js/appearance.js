@@ -12,23 +12,17 @@ visualStyles = {
 			"color": 0x2F0000,
 			"emissive": 0x2F0000,
 			"specular": 0x009900,
-			"shininess": 30,
-			"transparent": true,
-			"opacity": 0.7
+			"shininess": 30
 		}),
 		ballRandomColor: false,
 		blockMaterial: new THREE.MeshPhongMaterial({
 			"emissive": 0x090909,
 			"specular": 0x0F0F0F,
-			"shininess": 10,
-			"transparent": true,
-			"opacity": 0.8
+			"shininess": 10
 		}),
 		blockRandomColor: true,
 		paddleMaterial: new THREE.MeshPhongMaterial({
-			"color": 0xFFFFFF,
-			"transparent": true,
-			"opacity": 0.7
+			"color": 0xFFFFFF
 		}),
 		ambientLight: new THREE.AmbientLight(0x1F1F1F),
 		pointLighting: [
