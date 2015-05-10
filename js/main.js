@@ -5,9 +5,7 @@ var time, prevTime, controls;
 var block, paddle, ball, hitbox;
 var balls = [];
 
-var ballGlow;
-
-var gameLength = 400;
+var gameLength = 300;
 var gameWidth = 200;
 var gameHeight = 100;
 
@@ -18,12 +16,21 @@ var colSpacing = 3;
 var rowSpacing = 5;
 var layerSpacing = 3;
 var maxCols = Math.floor(gameWidth/(blockWidth+colSpacing));
-var maxLayers = Math.floor(gameHeight/(blockHeight+rowSpacing));
+var maxLayers = Math.floor(gameHeight/(blockHeight+layerSpacing));
 
-var ballRadius = 10;
+var ballRadius = 5;
+
+var blockGeometry;
+var paddleGeometry;
+
+var floorMaterial;
+var blockMaterial;
+var paddleMaterial;
+var ballMaterial;
+var ballShader;
+var lightingGroup = new THREE.Group();
 
 var raycaster = new THREE.Raycaster();
-
 var group = new THREE.Group();
 
 init();
@@ -31,7 +38,14 @@ setTimeout( ballRadius, 5000 );
 animate();
 
 function init() {
+	//Stuff
+	//paddleGeometry = new THREE.CylinderGeometry(5,20, gameHeight, 10 );
+	paddleGeometry = new THREE.BoxGeometry(40, gameHeight, 10 );	
+	
 	scene = new THREE.Scene();
+	renderer = new THREE.WebGLRenderer({antialias: false});
+	renderer.setPixelRatio(window.devicePixelRatio);
+	renderer.setSize(window.innerWidth, window.innerHeight);
 	
 	//Set up camera perspective projection
 	var aspect = window.innerWidth/window.innerHeight; 
@@ -39,39 +53,41 @@ function init() {
 	camera.position.set(0,400,400);
 	camera.lookAt(scene.position);
 	
-	//Set up lighting
-	var pointLight = new THREE.PointLight(0xffffff);
-	pointLight.position.set(0,250,0);
-	scene.add(pointLight);
-	var ambientLight = new THREE.AmbientLight(0x1C1C1C);
-	scene.add(ambientLight);
+	loadAppearance(visualStyles.flat);
+	scene.add(lightingGroup);
+	
+	var urlPrefix = "cubemap/inside1/";
+	urls = [ urlPrefix + "0004.png", urlPrefix + "0002.png",
+		urlPrefix + "0006.png", urlPrefix + "0005.png",
+		urlPrefix + "0001.png", urlPrefix + "0003.png" ];
+	
+	var materialArray = [];
+	for (var i = 0; i < 6; i++)
+		materialArray.push( new THREE.MeshBasicMaterial({
+			map: THREE.ImageUtils.loadTexture( urls[i] ),
+			side: THREE.BackSide
+		}));
+	scene.add(new THREE.Mesh(new THREE.CubeGeometry(5000, 5000, 5000), new THREE.MeshFaceMaterial(materialArray)));
 	
 	//Add floor
-	floor = new THREE.Mesh(new THREE.PlaneGeometry(gameWidth+ballRadius,gameLength+ballRadius), new THREE.MeshPhongMaterial({
-		"color": 0x6A6A6A,
-		"emissive": 0,
-		"specular": 1118481,
-		"shininess": 30
-	}));
+	floor = new THREE.Mesh(new THREE.PlaneGeometry(gameWidth+ballRadius,gameLength+ballRadius), floorMaterial);
 	floor.rotateOnAxis(new THREE.Vector3(1,0,0), -1.57); //rotate 90deg to face horizontally
 	scene.add(floor);
 	
 	//Set up block
-	block = new THREE.Mesh(new THREE.BoxGeometry(blockWidth,blockHeight,blockLength), new THREE.MeshPhongMaterial());
-	blockWall(19); //create wall
+	block = new THREE.Mesh(new THREE.BoxGeometry(blockWidth,blockHeight,blockLength), blockMaterial);
+	blockWall(10); //create wall
 	
 	//Set up paddle
-	var paddleGeom = new THREE.BoxGeometry(40, gameHeight, 10 );
-	paddle = new THREE.Mesh(paddleGeom, new THREE.MeshPhongMaterial());
-	paddle.position.y = paddleGeom.parameters.height/2;
+	paddle = new THREE.Mesh(paddleGeometry, paddleMaterial);
+	paddle.position.y = paddleGeometry.parameters.height/2;
 	paddle.position.z = gameLength/2-20;
 	group.add(paddle);
 	scene.add(group)
-	//scene.add(paddle);
 	
 	//Set up ball
 	//Test shader
-	ballGlow = new THREE.ShaderMaterial({
+	ballShader = new THREE.ShaderMaterial({
 	    uniforms: 
 		{ 
 			"c":   { type: "f", value: 1.0 },
@@ -87,12 +103,7 @@ function init() {
 	});
 	addBall();
 
-	//Initalize WebGL
-	renderer = new THREE.WebGLRenderer({antialias: false});
-	renderer.setClearColor(0x0F0F0F);
-	renderer.setPixelRatio(window.devicePixelRatio);
-	renderer.setSize(window.innerWidth, window.innerHeight);
-	
+	//Initalize Controls
 	controls = new THREE.OrbitControls(camera, renderer.domElement);
 	controls.minPolarAngle = 0;
 	controls.maxPolarAngle = Math.PI/2;
@@ -102,7 +113,6 @@ function init() {
 		paddle.position.x = (event.clientX/window.innerWidth) * gameWidth - gameWidth/2;
 		if(paddle.loadedBall)
 			paddle.loadedBall.position.x = paddle.position.x;
-		
 	});
 	
 	$("#addBall").click(function () {
@@ -111,7 +121,8 @@ function init() {
 	});
 	
 	$(window).keypress(function(event) {
-		if(event.keyCode == 32 && paddle.loadedBall) {
+		console.log(event.keyCode);
+		if((event.keyCode == 32 || event.keyCode == 0) && paddle.loadedBall) {
 			event.preventDefault();
 			paddle.loadedBall.direction.set(Math.random()-0.5, 0, -0.5).normalize();
 			balls.push(paddle.loadedBall);
@@ -130,7 +141,8 @@ function animate() {
 	controls.update();
 	update(time-prevTime);
 	prevTime = time;
-	paddle.position.x = balls[0].position.x;
+	//if(!paddle.loadedBall)
+	//	paddle.position.x = balls[0].position.x;
 }
 
 function update(delta) {
@@ -178,36 +190,54 @@ function update(delta) {
 				//break;
 			}
 		}
-		ball.position.add(ball.speed.copy(ball.direction).multiplyScalar(delta/4));
+		ball.position.add(ball.speed.copy(ball.direction).multiplyScalar(delta/3));
 	}
 
 }
 
+function loadAppearance(style) {
+	floorMaterial = style.floorMaterial;
+	ballMaterial = style.ballMaterial;
+	blockMaterial = style.blockMaterial;
+	paddleMaterial = style.paddleMaterial;
+	renderer.setClearColor(style.bgColor);
+	if(style.ambientLight) {
+		lightingGroup.add(style.ambientLight);
+	}
+	for(var i = 0; i<style.pointLighting.length; i+=2) {
+		var ptLight = style.pointLighting[i];
+		ptLight.position.copy(style.pointLighting[i+1]);
+		lightingGroup.add(ptLight);
+	}
+}
+
 function blockWall(rows) {
 	for(var z = 0; z < rows; z++) {
-		var material = new THREE.MeshPhongMaterial({
-			"color": Math.random() * 0xffffff,
-			"emissive": 0x090909,
-			"specular": 0x0F0F0F,
-			"shininess": 10
-		});
+		var material = blockMaterial.clone();
+		material.color.setHex(Math.random() * 0xffffff);
 		for(var x = 0; x < maxCols; x++) {
 			for(var y = 0; y < maxLayers; y++) {
-				var copy = block.clone();
-				copy.material = material;
-				copy.isBlock = true;
-				copy.position.x = x * (blockWidth+colSpacing) - (blockWidth+colSpacing)*(maxCols-1)/2;
-				copy.position.z = z * (blockLength+rowSpacing) - gameLength/2 + blockLength;
-				copy.position.y = y * (blockHeight+layerSpacing) + blockHeight/2;		
-				group.add(copy);
+				blockAt(x,y,z,material);
 			}
 		}
 	} 
 }
 
+function blockAt(x, y, z, blockMaterial) {
+	var blockCopy = block.clone();
+	if(arguments.length == 4) {
+		blockCopy.material = blockMaterial;
+	}
+	blockCopy.isBlock = true;
+	blockCopy.position.x = x * (blockWidth+colSpacing) - (blockWidth+colSpacing)*(maxCols-1)/2;
+	blockCopy.position.z = z * (blockLength+rowSpacing) - gameLength/2 + blockLength;
+	blockCopy.position.y = y * (blockHeight+layerSpacing) + blockHeight/2;
+	group.add(blockCopy);
+}
+
 function addBall() {
 	if(!paddle.loadedBall) {
-		var ball = new THREE.Mesh(new THREE.SphereGeometry(ballRadius, 16), new THREE.MeshPhongMaterial());
+		var ball = new THREE.Mesh(new THREE.SphereGeometry(ballRadius, 16), ballMaterial);
 		ball.position.y = ballRadius;
 		ball.position.x = paddle.position.x;
 		ball.position.z = paddle.position.z-ballRadius-5;
@@ -218,7 +248,7 @@ function addBall() {
 		hitbox.visible = false;
 		ball.add(hitbox);
 		
-		var glow = new THREE.Mesh(new THREE.SphereGeometry(ballRadius*1.2, 16), ballGlow);
+		var glow = new THREE.Mesh(new THREE.SphereGeometry(ballRadius*1.2, 16), ballShader);
 		ball.add(glow);
 		
 		ball.add(new THREE.PointLight(0x001188));
