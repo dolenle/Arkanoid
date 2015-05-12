@@ -2,12 +2,59 @@
 <html lang="en">
 
 <head>
-	<title>Hello World (Three.js)</title>
+	<title>Arkanoid</title>
 	<meta charset="utf-8">
-	<meta name="viewport" content="height=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<style>
+		@font-face {
+			font-family: 'AsapRegular';
+			src: url('fonts/Asap-Regular.ttf') format('truetype');
+			font-weight: normal;
+			font-style: normal;
+		}
+		@font-face {
+			font-family: 'AsapBold';
+			src: url('fonts/Asap-Bold.ttf') format('truetype');
+			font-weight: normal;
+			font-style: normal;
+		}
+		body {
+			font-family:AsapRegular,Calibri,Arial;
+		}
+		#header {
+			border:3px solid slategray;
+			border-radius: 10px;
+			max-width:1280px;
+			background-color:dimgray;
+			display:block;
+			padding:0 10px;
+			margin: 0px auto;
+		}
+		#score {
+			-webkit-border-top-left-radius: 8px;
+			-webkit-border-top-right-radius: 8px;
+			-moz-border-radius-topleft: 8px;
+			-moz-border-radius-topright: 8px;
+			border-top-left-radius: 8px;
+			border-top-right-radius: 8px;
+			background-color:black;
+			display:block;
+			padding:1px 20px;
+			margin: 0px auto;
+			color: white;
+			font-size: 20px;
+		}
+		#header h1 {
+			font-family:AsapBold,Calibri,Arial;
+			margin-left:28px;
+		}
+		#game {
+			text-align: center;
+		}
+	</style>
     <script src="js/jquery.js"></script>
 	<script src="js/three.min.js"></script>
 	<script src="js/OrbitControls.js"></script>
+	<script src="js/Mirror.js"></script>
 	<script id="vertexShader" type="x-shader/x-vertex">
 		uniform vec3 viewVector;
 		uniform float c;
@@ -37,7 +84,22 @@
 </head>
 
 <body>
-	<button id="addBall">Add Ball</button>
+	<div id="header">
+		<p style="float:right;margin-right:10px"><br>ECE462 Dolen Le</p>
+		<h1>BrickBreaker/Arkanoid/Breakout</h1>
+	</div>
+	<div style="text-align: center">
+		<br><button id="addBall">Add Ball</button>&nbsp
+		<input type="checkbox" id="wallToggle">Show Walls</input>
+		<br><br>
+	</div>
+	<div id="score">
+		<p>Score: <span id="scorecounter"></span></p>
+	</div>
+	<div id="game"></div>
+	<p style="text-align:center">
+		Drag mouse to adjust camera. Move mouse to control paddle. Press space to release ball.
+	</p>
 	<script src="js/main.js"></script>
 </body>
 
