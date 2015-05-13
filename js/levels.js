@@ -4,12 +4,12 @@ levels = [
 		gameLength: 300,
 		gameWidth: 250,
 		gameHeight: 15,
-		blockWidth: 100,
+		blockWidth: 40,
 		blockLength: 15,
 		blockHeight: 15,
 		colSpacing: 5,
 		rowSpacing: 5,
-		rows: 1,
+		rows: 4,
 		rearSpace: 50,
 		layerSpacing: 0,
 		ballRadius: 5,
@@ -25,18 +25,19 @@ levels = [
 		maxSpeedFactor: 3.5,
 		initialBallDirection: new THREE.Vector3(Math.random()-0.5, 0, -0.7)
 	},
-	{ 
-		gameLength: 400,
+	{
+		name: "A New Dimension",
+		gameLength: 200,
 		gameWidth: 250,
-		gameHeight: 100,
+		gameHeight: 80,
 		blockWidth: 25,
 		blockLength: 10,
 		blockHeight: 10,
-		colSpacing: 3,
+		colSpacing: 4,
 		rowSpacing: 5,
-		rows: 10,
-		rearSpace: 50,
-		layerSpacing: 3,
+		rows: 1,
+		rearSpace: 20,
+		layerSpacing: 4,
 		ballRadius: 5,
 		paddleWidth: 50,
 		paddleDepth: 5,
@@ -53,7 +54,6 @@ levels = [
 				new THREE.Vector3(this.paddleWidth/2,  -this.gameHeight/2, this.paddleDepth),
 				new THREE.Vector3(this.paddleWidth/2-10,  -this.gameHeight/2, -this.paddleDepth)
 			);
-
 			paddleGeometry.faces.push(
 				new THREE.Face3(0,3,1),
 				new THREE.Face3(0,2,3),
@@ -70,8 +70,8 @@ levels = [
 			return paddleGeometry;
 		},
 		initialBalls: 5,
-		initialSpeedFactor: 5,
-		speedThreshold: 0.2,
+		initialSpeedFactor: 6,
+		speedThreshold: 0.1,
 		speedRatio: 0.9,
 		maxSpeedFactor: 3,
 		initialBallDirection: new THREE.Vector3(Math.random()-0.5, Math.random()-0.5, -0.6)

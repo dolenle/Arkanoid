@@ -1,8 +1,8 @@
 
 var scene, camera, renderer;
 
-var time, prevTime, controls, cubeURL, cubeMapTexture;
-var block, paddle, ball, hitbox;
+var time, prevTime, controls, skybox, cubeMapTexture;
+var floor, block, paddle, ball, hitbox;
 var balls = [];
 
 var gameLength, gameWidth, gameHeight;
@@ -25,6 +25,7 @@ var paddleMaterial;
 var ballMaterial;
 var ballShader;
 var wallMaterial;
+var shadows = false;
 var lightingGroup = new THREE.Group();
 
 var raycaster = new THREE.Raycaster();
@@ -33,6 +34,7 @@ var wallGroup = new THREE.Group();
 var floorMirror;
 var ballCamera;
 
+var levelName;
 var levelCounter = 0;
 var score = 0;
 var blockCount = 0;
@@ -64,8 +66,8 @@ function init() {
 	camera.lookAt(scene.position);
 	
 	//skybox
-	var urlPrefix = "cubemap/inside1/";
-	cubeURL = [ urlPrefix + "0004.png", urlPrefix + "0002.png",
+	var urlPrefix = "cubemap/inside2/";
+	var cubeURL = [ urlPrefix + "0004.png", urlPrefix + "0002.png",
 		urlPrefix + "0006.png", urlPrefix + "0005.png",
 		urlPrefix + "0001.png", urlPrefix + "0003.png" ];
 	cubeMapTexture = THREE.ImageUtils.loadTextureCube(cubeURL, THREE.CubeRefractionMapping);
@@ -77,16 +79,17 @@ function init() {
 		uniforms: cubeMapShader.uniforms,
 		side: THREE.BackSide
 	});
-	scene.add(new THREE.Mesh(new THREE.BoxGeometry(8000, 8000, 8000), skyboxMaterial));
+	skybox = new THREE.Mesh(new THREE.BoxGeometry(8000, 8000, 8000), skyboxMaterial);
 	
-	loadAppearance(visualStyles.mirror);
+	loadAppearance(visualStyles.flat);
 	scene.add(lightingGroup);
 	
 	//Add floor
 	floor = new THREE.Mesh(new THREE.PlaneGeometry(gameWidth+ballRadius,gameLength+ballRadius), floorMaterial);
 	floor.rotateOnAxis(new THREE.Vector3(1,0,0), -Math.PI/2); //rotate 90deg to face horizontally
 	if(floorMirror)
-		floor.add(floorMirror); 
+		floor.add(floorMirror);
+	floor.receiveShadow = shadows;
 	scene.add(floor);
 	
 	//Add walls
@@ -105,6 +108,8 @@ function init() {
 	paddle = new THREE.Mesh(paddleGeometry, paddleMaterial);
 	paddle.position.y = gameHeight/2;
 	paddle.position.z = gameLength/2-20;
+	paddle.receiveShadow = shadows;
+	paddle.castShadow = shadows;
 	group.add(paddle);
 	scene.add(group)
 	
@@ -113,6 +118,7 @@ function init() {
 	
 	//Set up block
 	block = new THREE.Mesh(new THREE.BoxGeometry(blockWidth,blockHeight,blockLength), blockMaterial);
+	block.castShadow = shadows;
 	blockWall(blockRows); //create wall
 
 	//Initialize Controls
@@ -135,11 +141,24 @@ function init() {
 	$("#wallToggle").change(function() {
 		if($("#wallToggle").prop("checked")) {
 			scene.add(wallGroup);
-			console.log("checked")
 		} else {
 			scene.remove(wallGroup);
 		}
 		$("#wallToggle").blur();
+	});
+	
+	$("#envToggle").change(function() {
+		if($("#envToggle").prop("checked")) {
+			scene.add(skybox);
+		} else {
+			scene.remove(skybox);
+		}
+		$("#envToggle").blur();
+	});
+	
+	$("#stylemenu").on('change', function() {
+		var opts = [visualStyles.flat, visualStyles.glass, visualStyles.mirror];
+		loadAppearance(opts[this.value]);
 	});
 	
 	$(window).keypress(function(event) {
@@ -169,8 +188,13 @@ function animate() {
 	controls.update();
 	update(time-prevTime);
 	prevTime = time;
-	if(!paddle.loadedBall)
-		paddle.position.x = balls[0].position.x;
+	if(blockCount == 0) {
+		showMsg("Level Complete");
+		blockCount++;
+		window.setTimeout(function() {loadLevel(++levelCounter)}, 1000);
+	}
+	// if(!paddle.loadedBall)
+		// paddle.position.x = balls[0].position.x;
 	requestAnimationFrame(animate);
 }
 
@@ -195,9 +219,12 @@ function update(delta) {
 		if(ball.position.z > gameLength/2) {
 			balls.splice(b, 1);
 			group.remove(ball);
-			if(ballsRemaining > 0) {
+			if(ballsRemaining > 1) {
 				addBall();
 				$("#ballcounter").text(--ballsRemaining);
+			} else {
+				$("#ballcounter").text(--ballsRemaining);
+				alert("Game Over!");
 			}
 			continue;
 		}
@@ -226,6 +253,7 @@ function update(delta) {
 					ball.direction.reflect(collisionResults[0].face.normal);
 					ball.justBounced = false;
 					$('#scorecounter').text(++score);
+					blockCount--;
 					if(speedFactor>speedMax && Math.random() < speedThreshold) {
 						speedFactor*=speedRatio;
 						showMsg("speed increased!");
@@ -235,9 +263,6 @@ function update(delta) {
 					ball.justBounced = true;
 					break;
 				}
-			} else if(score == blockCount) {
-				showMsg("Level Complete");
-				loadAppearance(visualStyles.flat);
 			}
 		}
 		ball.position.add(ball.speed.copy(ball.direction).multiplyScalar(delta/speedFactor));
@@ -249,10 +274,9 @@ function loadAppearance(style) {
 	wallMaterial = style.wallMaterial;
 	if(style.ballGlow) {
 		ballShader = new THREE.ShaderMaterial({
-			uniforms: 
-			{
-				"c":   {type: "f", value: 0.9},
-				"p":   {type: "f", value: 0.7},
+			uniforms: {
+				"c": {type: "f", value: 0.9},
+				"p": {type: "f", value: 0.7},
 				glowColor: {type: "c", value: new THREE.Color(style.ballMaterial.color)},
 				viewVector: {type: "v3", value: camera.position}
 			},
@@ -263,11 +287,17 @@ function loadAppearance(style) {
 			transparent: true
 		});
 		ballGlow = new THREE.Mesh(new THREE.SphereGeometry(ballRadius*1.5, 16), ballShader);
+	} else {
+		ballGlow = false;
 	}
 	ballMaterial = style.ballMaterial;
 	if(style.floorReflection == true) {
 		floorMirror = new THREE.Mirror(renderer, camera, { clipBias: 0.03, textureWidth: gameWidth*2, textureHeight: gameLength*2, color: 0x707070 } );
 		floorMaterial = floorMirror.material;
+		if(floor) {
+			floor.material = floorMaterial;
+			floor.add(floorMirror);
+		}
 		ballCamera = new THREE.CubeCamera(ballRadius, 10000, ballRadius);
 		scene.add(ballCamera);
 		ballMaterial.envMap = ballCamera.renderTarget;
@@ -275,8 +305,10 @@ function loadAppearance(style) {
 		floorMirror = false;
 		ballCamera = false;
 		floorMaterial = style.floorMaterial;
-		floor.material = floorMaterial;
-	}  
+		if(floor) {
+			floor.material = floorMaterial;
+		}
+	}
 	blockMaterial = style.blockMaterial;
 	if(style.blockRefraction == true) {
 		blockMaterial.envMap=cubeMapTexture;
@@ -289,10 +321,16 @@ function loadAppearance(style) {
 			var obj = group.children[i];
 			if(obj.isBlock) {
 				var material = blockMaterial.clone();
-				material.color.setHex(obj.material.color);
+				material.color.copy(obj.material.color);
 				obj.material.dispose();
 				obj.material = material;
-			} else {
+			} else { //its a ball
+				if(!ballGlow) {
+					obj.remove(obj.children[1]);
+				} else {
+					obj.add(ballGlow);
+					obj.add(new THREE.PointLight(obj.material.color));
+				}
 				obj.material = ballMaterial;
 			}
 		}
@@ -304,6 +342,29 @@ function loadAppearance(style) {
 	if(style.ambientLight) {
 		lightingGroup.add(style.ambientLight);
 	}
+	if(style.shadowLighting) {
+		for(var i = 0; i<style.shadowLighting.length; i+=2) {
+			var dLight = style.shadowLighting[i];
+			dLight.onlyShadow = true;
+			dLight.castShadow = true;
+			dLight.position.copy(style.shadowLighting[i+1]);
+			lightingGroup.add(dLight);
+		}
+		renderer.shadowMapType = THREE.PCFSoftShadowMap;
+		shadows = true;
+	} else {
+		shadows = false;
+	}
+	renderer.shadowMapEnabled = shadows;
+	if(floor) {
+		floor.receiveShadow = shadows;
+	}
+	if(block) {
+		block.castShadow = shadows;
+	}
+	if(paddle) {
+		paddle.castShadow = shadows;
+	}
 	for(var i = 0; i<style.pointLighting.length; i+=2) {
 		var ptLight = style.pointLighting[i];
 		ptLight.position.copy(style.pointLighting[i+1]);
@@ -312,7 +373,9 @@ function loadAppearance(style) {
 }
 
 function loadLevel(level) {
+	console.log("Loading Level "+level);
 	var data = levels[level];
+	levelName = data.name;
 	gameWidth = data.gameWidth;
 	gameLength = data.gameLength;
 	gameHeight = data.gameHeight;
@@ -336,9 +399,52 @@ function loadLevel(level) {
 	speedMax = data.maxSpeedFactor;
 	paddleGeometry = data.paddleGeometry();
 	initialBallDirection = data.initialBallDirection;
-	
-	$("#msg").text("Level "+Number(levelCounter+1));
+	levelCounter = level;
+	showMsg("Level "+Number(levelCounter+1));
 	$("#ballcounter").text(ballsRemaining);
+	
+	if(scene) { //clear previous
+		paddle.geometry.dispose();
+		paddle.geometry = paddleGeometry;
+		paddle.position.x = 0;
+		paddle.position.y = gameHeight/2;
+		paddle.position.z = gameLength/2-20;
+		
+		floor.geometry.dispose();
+		floor.geometry = new THREE.PlaneGeometry(gameWidth+ballRadius,gameLength+ballRadius);
+		block.geometry.dispose();
+		block.geometry = new THREE.BoxGeometry(blockWidth,blockHeight,blockLength);
+		
+		var leftWall = wallGroup.children[0];
+		var rightWall = wallGroup.children[1];
+		var rearWall = wallGroup.children[2];
+		leftWall.geometry.dispose();
+		rightWall.geometry.dispose();
+		rearWall.geometry.dispose();
+		leftWall.geometry = new THREE.BoxGeometry(wallDepth, gameHeight, gameLength+ballRadius);
+		rightWall.geometry = new THREE.BoxGeometry(wallDepth, gameHeight, gameLength+ballRadius);
+		rearWall.geometry = new THREE.BoxGeometry(gameWidth+2*wallDepth+ballRadius, gameHeight, wallDepth);
+		rightWall.position.x = gameWidth/2+wallDepth/2+ballRadius/2;
+		leftWall.position.x = -rightWall.position.x;
+		rearWall.position.z = -gameLength/2-wallDepth/2-ballRadius/2;
+		rearWall.position.y = leftWall.position.y = rightWall.position.y = gameHeight/2;
+		
+		balls = [];
+		
+		for(var i=group.children.length-1; i>0; i--) {
+			var object = group.children[i];
+			if(object.geometry) {
+				object.geometry.dispose();
+			}
+			if(object.material) {
+				object.material.dispose();
+			}
+			group.remove(object);
+		}
+		blockWall(blockRows);
+		paddle.loadedBall = false;
+		addBall();
+	}
 }
 
 function blockWall(rows) {
@@ -386,7 +492,9 @@ function addBall() {
 			ball.add(ballGlow.clone());
 			ball.add(new THREE.PointLight(ball.material.color));
 		}
-		
+		if(shadows) {
+			ball.castShadow = true;
+		}
 		ball.speed = new THREE.Vector3();
 		ball.direction = new THREE.Vector3();//.set(Math.random()-0.5, 0, -0.5).normalize();
 		
@@ -399,7 +507,7 @@ function showMsg(msg) {
 	$("#msg").fadeOut(100, function() {
 		$("#msg").text(msg);
 		$("#msg").fadeIn(100).delay(1000).fadeOut(100, function() {
-			$("#msg").text("Level "+Number(levelCounter+1));
+			$("#msg").text("Level "+Number(levelCounter+1)+": "+levelName);
 			$("#msg").fadeIn(100)
 		});
 	});
