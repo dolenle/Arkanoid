@@ -21,11 +21,11 @@
 			font-family:AsapRegular,Calibri,Arial;
 		}
 		#header {
-			border:3px solid slategray;
+			border: 3px solid slategray;
 			border-radius: 10px;
-			max-width:1280px;
-			background-color:dimgray;
-			display:block;
+			max-width: 1280px;
+			background-color: dimgray;
+			display: block;
 			padding:0 10px;
 			margin: 0px auto;
 		}
@@ -37,11 +37,12 @@
 			border-top-left-radius: 8px;
 			border-top-right-radius: 8px;
 			background-color:black;
-			display:block;
-			padding:1px 20px;
+			display: block;
+			padding: 10px 20px;
 			margin: 0px auto;
 			color: white;
 			font-size: 20px;
+			text-align: center;
 		}
 		#header h1 {
 			font-family:AsapBold,Calibri,Arial;
@@ -81,6 +82,7 @@
 		}
 	</script>
 	<script src="js/appearance.js"></script>
+	<script src="js/levels.js"></script>
 </head>
 
 <body>
@@ -90,11 +92,18 @@
 	</div>
 	<div style="text-align: center">
 		<br><button id="addBall">Add Ball</button>&nbsp
-		<input type="checkbox" id="wallToggle">Show Walls</input>
+		<input type="checkbox" id="wallToggle">Show Walls</input>&nbsp
+		<select id="stylemenu">
+			<option>Flat</option>
+			<option>Glass</option>
+			<option>Mirror</option>
+		</select>
 		<br><br>
 	</div>
 	<div id="score">
-		<p>Score: <span id="scorecounter"></span></p>
+		<span style="float:left">Score: <span id="scorecounter"></span></span>
+		<span id="msg"></span>
+		<span style="float:right">Balls: <span id="ballcounter"></span></span>
 	</div>
 	<div id="game"></div>
 	<p style="text-align:center">

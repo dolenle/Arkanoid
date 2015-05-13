@@ -2,6 +2,7 @@ visualStyles = {
 	flat: {
 		name: "FlatColors",
 		bgColor: 0x0F0F0F,
+		wallMaterial: new THREE.MeshPhongMaterial({"color":0x8F8F8F}),
 		floorMaterial: new THREE.MeshBasicMaterial({
 				"color": (Math.random()/7)*0xFFFFFF
 		}),
@@ -31,6 +32,7 @@ visualStyles = {
 	glass: {
 		name: "Glass",
 		bgColor: 0x0F0F0F,
+		wallMaterial: new THREE.MeshPhongMaterial({"color":0x8F8F8F}),
 		floorMaterial: new THREE.MeshPhongMaterial({
 			"color": 0x606060,
 			"emissive": 0,
@@ -70,7 +72,12 @@ visualStyles = {
 	
 	mirror: {
 		name: "Mirror",
-		bgColor: 0x0A0A0A,
+		bgColor: 0xFFFFFF,
+		wallMaterial: new THREE.MeshPhongMaterial({
+			"color":0x8F8F8F,
+			"transparent": true,
+			"opacity": 0.4
+		}),
 		floorMaterial: new THREE.MeshPhongMaterial({
 			"color": 0x181818,
 			"specular": 0x111111,
