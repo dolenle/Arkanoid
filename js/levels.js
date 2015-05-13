@@ -39,7 +39,7 @@ levels = [
 		rearSpace: 20,
 		layerSpacing: 4,
 		ballRadius: 5,
-		paddleWidth: 50,
+		paddleWidth: 55,
 		paddleDepth: 5,
 		paddleGeometry: function() {
 			var paddleGeometry = new THREE.Geometry();
@@ -71,9 +71,60 @@ levels = [
 		},
 		initialBalls: 5,
 		initialSpeedFactor: 6,
-		speedThreshold: 0.1,
-		speedRatio: 0.9,
+		speedThreshold: 0.16,
+		speedRatio: 0.94,
 		maxSpeedFactor: 3,
+		initialBallDirection: new THREE.Vector3(Math.random()-0.5, Math.random()-0.5, -0.6)
+	},
+	{
+		name: "A Big Ball",
+		gameLength: 300,
+		gameWidth: 300,
+		gameHeight: 80,
+		blockWidth: 25,
+		blockLength: 10,
+		blockHeight: 10,
+		colSpacing: 4,
+		rowSpacing: 5,
+		rows: 6,
+		rearSpace: 20,
+		layerSpacing: 4,
+		ballRadius: 10,
+		paddleWidth: 70,
+		paddleDepth: 5,
+		paddleGeometry: function() {
+			var paddleGeometry = new THREE.Geometry();
+			paddleGeometry.vertices.push(
+				new THREE.Vector3(-this.paddleWidth/2,  this.gameHeight/2, this.paddleDepth),
+				new THREE.Vector3(-this.paddleWidth/2+15,  this.gameHeight/2, -this.paddleDepth),
+				new THREE.Vector3(this.paddleWidth/2,  this.gameHeight/2, this.paddleDepth),
+				new THREE.Vector3(this.paddleWidth/2-15,  this.gameHeight/2, -this.paddleDepth),
+				
+				new THREE.Vector3(-this.paddleWidth/2,  -this.gameHeight/2, this.paddleDepth),
+				new THREE.Vector3(-this.paddleWidth/2+15,  -this.gameHeight/2, -this.paddleDepth),
+				new THREE.Vector3(this.paddleWidth/2,  -this.gameHeight/2, this.paddleDepth),
+				new THREE.Vector3(this.paddleWidth/2-15,  -this.gameHeight/2, -this.paddleDepth)
+			);
+			paddleGeometry.faces.push(
+				new THREE.Face3(0,3,1),
+				new THREE.Face3(0,2,3),
+				new THREE.Face3(0,6,2),
+				new THREE.Face3(0,4,6),
+				new THREE.Face3(0,5,4),
+				new THREE.Face3(0,1,5),
+				new THREE.Face3(1,3,7),
+				new THREE.Face3(1,7,5),
+				new THREE.Face3(3,6,7),
+				new THREE.Face3(3,2,6)
+			);
+			paddleGeometry.computeFaceNormals();
+			return paddleGeometry;
+		},
+		initialBalls: 5,
+		initialSpeedFactor: 6,
+		speedThreshold: 0.1,
+		speedRatio: 0.92,
+		maxSpeedFactor: 3.5,
 		initialBallDirection: new THREE.Vector3(Math.random()-0.5, Math.random()-0.5, -0.6)
 	}
 ];

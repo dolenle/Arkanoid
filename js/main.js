@@ -48,7 +48,12 @@ setTimeout( ballRadius, 5000 );
 animate();
 
 function init() {
-	loadLevel(0);
+	var get = location.search.replace('?', '').split('=');
+	if(get[0] == "lvl") {
+		loadLevel(parseInt(get[1])-1);
+	} else {
+		loadLevel(0);
+	}
 	
 	scene = new THREE.Scene();
 	renderer = new THREE.WebGLRenderer({antialias: false});
@@ -66,20 +71,8 @@ function init() {
 	camera.lookAt(scene.position);
 	
 	//skybox
-	var urlPrefix = "cubemap/inside2/";
-	var cubeURL = [ urlPrefix + "0004.png", urlPrefix + "0002.png",
-		urlPrefix + "0006.png", urlPrefix + "0005.png",
-		urlPrefix + "0001.png", urlPrefix + "0003.png" ];
-	cubeMapTexture = THREE.ImageUtils.loadTextureCube(cubeURL, THREE.CubeRefractionMapping);
-	var cubeMapShader = THREE.ShaderLib["cube"];
-	cubeMapShader.uniforms[ "tCube" ].value = cubeMapTexture;
-	var skyboxMaterial = new THREE.ShaderMaterial({
-		fragmentShader: cubeMapShader.fragmentShader,
-		vertexShader: cubeMapShader.vertexShader,
-		uniforms: cubeMapShader.uniforms,
-		side: THREE.BackSide
-	});
-	skybox = new THREE.Mesh(new THREE.BoxGeometry(8000, 8000, 8000), skyboxMaterial);
+	var urlPrefix = "cubemap/inside1/";
+	loadCubeMap(urlPrefix);
 	
 	loadAppearance(visualStyles.flat);
 	scene.add(lightingGroup);
@@ -147,18 +140,19 @@ function init() {
 		$("#wallToggle").blur();
 	});
 	
-	$("#envToggle").change(function() {
-		if($("#envToggle").prop("checked")) {
+	$("#stylemenu").on('change', function() {
+		var opts = [visualStyles.flat, visualStyles.glass, visualStyles.mirror];
+		loadAppearance(opts[this.value]);
+	});
+	
+	$("#envmenu").on('change', function() {
+		var opts = [0, "cubemap/inside1/","cubemap/inside2/","cubemap/outside1/"];
+		if(this.value > 0) {
+			loadCubeMap(opts[this.value]);
 			scene.add(skybox);
 		} else {
 			scene.remove(skybox);
 		}
-		$("#envToggle").blur();
-	});
-	
-	$("#stylemenu").on('change', function() {
-		var opts = [visualStyles.flat, visualStyles.glass, visualStyles.mirror];
-		loadAppearance(opts[this.value]);
 	});
 	
 	$(window).keypress(function(event) {
@@ -193,8 +187,8 @@ function animate() {
 		blockCount++;
 		window.setTimeout(function() {loadLevel(++levelCounter)}, 1000);
 	}
-	// if(!paddle.loadedBall)
-		// paddle.position.x = balls[0].position.x;
+	if(!paddle.loadedBall)
+		paddle.position.x = balls[0].position.x;
 	requestAnimationFrame(animate);
 }
 
@@ -219,10 +213,10 @@ function update(delta) {
 		if(ball.position.z > gameLength/2) {
 			balls.splice(b, 1);
 			group.remove(ball);
-			if(ballsRemaining > 1) {
+			if(ballsRemaining > 1 && balls.length == 0) {
 				addBall();
 				$("#ballcounter").text(--ballsRemaining);
-			} else {
+			} else if(ballsRemaining <=1) {
 				$("#ballcounter").text(--ballsRemaining);
 				alert("Game Over!");
 			}
@@ -268,6 +262,36 @@ function update(delta) {
 		ball.position.add(ball.speed.copy(ball.direction).multiplyScalar(delta/speedFactor));
 	}
 
+}
+
+function loadCubeMap(url) {
+	var cubeURL = [ url + "0004.png", url + "0002.png",
+		url + "0006.png", url + "0005.png",
+		url + "0001.png", url + "0003.png" ];
+	if(cubeMapTexture) {
+		cubeMapTexture.dispose();
+	}
+	cubeMapTexture = THREE.ImageUtils.loadTextureCube(cubeURL, THREE.CubeRefractionMapping);
+	cubeMapShader = THREE.ShaderLib["cube"];
+	cubeMapShader.uniforms[ "tCube" ].value = cubeMapTexture;
+	skyboxMaterial = new THREE.ShaderMaterial({
+		fragmentShader: cubeMapShader.fragmentShader,
+		vertexShader: cubeMapShader.vertexShader,
+		uniforms: cubeMapShader.uniforms,
+		side: THREE.BackSide
+	});
+	if(!skybox) {
+		skybox = new THREE.Mesh(new THREE.BoxGeometry(8000, 8000, 8000), skyboxMaterial);
+	} else {
+		skybox.material.dispose();
+		skybox.material = skyboxMaterial;
+		for(var i = 0; i < group.children.length; i++) { //update materials
+			var obj = group.children[i];
+			if(obj.isBlock && obj.material.envMap) {
+				obj.material.envMap = cubeMapTexture;
+			}
+		}
+	}
 }
 
 function loadAppearance(style) {
